@@ -690,9 +690,9 @@
                 // Fly to the route with some offset
                 map3d.camera.flyTo({
                 destination: Cesium.Cartesian3.fromElements(
-                        boundingSphere.center.x-boundingSphere.radius * 3,
-                        boundingSphere.center.y+boundingSphere.radius * 5.5,
-                        boundingSphere.center.z -boundingSphere.radius * 4),
+                        boundingSphere.center.x*1.003,
+                        boundingSphere.center.y*1.003,
+                        boundingSphere.center.z*0.996),
                 orientation: {
                     heading: 0.0,
                     pitch: -0.5,
@@ -1094,23 +1094,64 @@ function startTracking() {
     
     // 開始獲取位置
     if (navigator.geolocation) {
-        trackingInterval = setInterval(() => {
-            navigator.geolocation.getCurrentPosition(
-                position => updateTrackPosition(position),
-                error => handleTrackingError(error),
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 30000,
-                    timeout: 27000
-                }
-            );
-        }, 500); // 每5秒記錄一個點
+        // 先立即獲取一次位置並移動到該位置
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                // 移動到當前位置
+                moveToCurrentPosition(position);
+                // 然後開始定期追蹤
+                trackingInterval = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(
+                        position => updateTrackPosition(position),
+                        error => handleTrackingError(error),
+                        {
+                            enableHighAccuracy: true,
+                            maximumAge: 30000,
+                            timeout: 27000
+                        }
+                    );
+                }, 500); // 每5秒記錄一個點
+            },
+            error => handleTrackingError(error),
+            {
+                enableHighAccuracy: true,
+                maximumAge: 30000,
+                timeout: 27000
+            }
+        );
     } else {
         alert("Geolocation is not supported by this browser.");
         stopTracking();
     }
 }
-
+// 新增函數：移動到當前位置
+function moveToCurrentPosition(position) {
+    const coords = position.coords;
+    const point = [coords.longitude, coords.latitude];
+    
+    if (currentViewMode === '2d' && map2d) {
+        // 2D地圖移動到當前位置
+        const view = map2d.getView();
+        view.animate({
+            center: ol.proj.fromLonLat(point),
+            zoom: 16, // 較高的縮放級別
+            duration: 500 // 快速移動
+        });
+    } else if (currentViewMode === '3d' && map3d) {
+        // 3D地圖移動到當前位置
+        map3d.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(
+                coords.longitude, 
+                coords.latitude, 
+                coords.altitude ? coords.altitude + 100 : 500), // 高度稍高於當前位置
+            orientation: {
+                heading: 0.0,
+                pitch: -0.5, // 稍微傾斜的視角
+                roll: 0.0
+            },
+            duration: 0.5 // 快速移動
+        });
+    }}
 // 更新追蹤位置
 function updateTrackPosition(position) {
     const coords = position.coords;
