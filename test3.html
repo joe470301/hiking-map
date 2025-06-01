@@ -1357,7 +1357,7 @@
                         if (currentViewMode === '2d') {
                             map2d.getView().animate({
                                 center: ol.proj.fromLonLat(currentLonLat),
-                                zoom: 14, // A good zoom level for local area, but not too close
+                                zoom: 19, // A good zoom level for local area, but not too close
                                 duration: 1000
                             });
                         } else if (currentViewMode === '3d' && map3d) {
@@ -1383,7 +1383,7 @@
                                     timeout: 27000
                                 }
                             );
-                        }, 5000); // 每5秒記錄一個點
+                        }, 500); // 每5秒記錄一個點
                     },
                     error => handleTrackingError(error),
                     {
